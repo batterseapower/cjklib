@@ -186,8 +186,9 @@ class TableBuilder(object):
                 type_ = columnTypeMap[column]
             else:
                 type_ = Text()
-                warn("column %s has no type, assuming default 'Text()'" \
-                    % column)
+                if not self.quiet:
+                    warn("column %s has no type, assuming default 'Text()'" \
+                        % column)
             table.append_column(Column(column, type_,
                 primary_key=(column in primaryKeys)))
 
@@ -278,7 +279,8 @@ class EntryGeneratorBuilder(TableBuilder):
             try:
                 table.insert(newEntry).execute()
             except sqlalchemy.exceptions.IntegrityError, e:
-                warn(unicode(e))
+                if not(self.quiet):
+                    warn(unicode(e))
                 raise
 
         for index in self.buildIndexObjects(self.PROVIDES, self.INDEX_KEYS):
@@ -483,7 +485,7 @@ class UnihanBuilder(EntryGeneratorBuilder):
         if not self.unihanGenerator:
             path = self.findFile(['Unihan.txt', 'Unihan.zip'],
                 "Unihan database file")
-            self.unihanGenerator = UnihanGenerator(path)
+            self.unihanGenerator = UnihanGenerator(path, quiet=self.quiet)
             if not self.quiet:
                 warn("reading file '" + path + "'")
         return self.unihanGenerator
@@ -1440,8 +1442,9 @@ class CSVFileLoader(TableBuilder):
         try:
             self.db.execute(table.insert(), entries)
         except sqlalchemy.exceptions.IntegrityError, e:
-            warn(unicode(e))
-            #warn(unicode(insertStatement))
+            if not self.quiet:
+                warn(unicode(e))
+                #warn(unicode(insertStatement))
             raise
 
         # get create index statement
@@ -2683,7 +2686,7 @@ class EDICTFormatBuilder(EntryGeneratorBuilder):
                 # parse line
                 matchObj = self.entryRegex.match(line)
                 if not matchObj:
-                    if line.strip() != '':
+                    if line.strip() != '' and not self.quiet:
                         warn("error reading line '" + line + "'")
                     continue
                 # get entries
@@ -2894,7 +2897,8 @@ class EDICTFormatBuilder(EntryGeneratorBuilder):
                 simpleTable.insert(simpleData).execute()
                 fts3Table.insert(fts3Data).execute()
             except sqlalchemy.exceptions.IntegrityError:
-                warn(unicode(e))
+                if not self.quiet:
+                    warn(unicode(e))
                 #warn(unicode(insertStatement))
                 raise
 
@@ -2931,7 +2935,8 @@ class EDICTFormatBuilder(EntryGeneratorBuilder):
 
         hasFTS3 = self.db.engine.name == 'sqlite' and self.testFTS3()
         if not hasFTS3:
-            warn("No SQLite FTS3 support found, fulltext search not supported.")
+            if not self.quiet:
+                warn("No SQLite FTS3 support found, fulltext search not supported.")
             # get create statement
             table = self.buildTableObject(self.PROVIDES, self.COLUMNS,
                 self.COLUMN_TYPES, self.PRIMARY_KEYS)
@@ -2954,8 +2959,9 @@ class EDICTFormatBuilder(EntryGeneratorBuilder):
                 try:
                     table.insert(newEntry).execute()
                 except sqlalchemy.exceptions.IntegrityError:
-                    warn(unicode(e))
-                    #warn(unicode(insertStatement))
+                    if not self.quiet:
+                        warn(unicode(e))
+                        #warn(unicode(insertStatement))
                     raise
         else:
             # write table content
@@ -3387,7 +3393,8 @@ class DatabaseBuilder:
         if type(tables) != type([]):
             tables = [tables]
 
-        warn("Building database '%s'" % self.db.databaseUrl)
+        if not self.quiet:
+            warn("Building database '%s'" % self.db.databaseUrl)
 
         # remove tables that don't need to be rebuilt
         filteredTables = []
@@ -3409,8 +3416,9 @@ class DatabaseBuilder:
         if self.rebuildDepending:
             dependingTables = self.getRebuiltDependingTables(tables)
             if dependingTables:
-                warn("Tables rebuilt because of dependencies updated: '" \
-                    +"', '".join(dependingTables) + "'")
+                if not self.quiet:
+                    warn("Tables rebuilt because of dependencies updated: '" \
+                        +"', '".join(dependingTables) + "'")
                 tables.extend(dependingTables)
 
         # get table list according to dependencies
