@@ -3178,7 +3178,75 @@ class CEDICTGRWordIndexBuilder(WordIndexBuilder):
     HEADWORD_SOURCE = 'Headword'
 
 
-class HanDeDictBuilder(CEDICTFormatBuilder):
+class TimestampedCEDICTFormatBuilder(CEDICTFormatBuilder):
+    """
+    Shared functionality for dictionaries whose file names include a timestamp.
+    """
+    def extractTimeStamp(self, filePath):
+        fileName = os.path.basename(filePath)
+        matchObj = re.match(self.EXTRACT_TIMESTAMP, fileName)
+        if matchObj:
+            return matchObj.group(1)
+
+    def getPreferredFile(self, filePaths):
+        timeStamps = []
+        for filePath in filePaths:
+            ts = self.extractTimeStamp(filePath)
+            if ts:
+                timeStamps.append((ts, filePath))
+        if timeStamps:
+            _, filePath = max(timeStamps)
+            return filePath
+        else:
+            return filePaths[0]
+
+    def getArchiveContentName(self, filePath):
+        timeStamp = self.extractTimeStamp(filePath)
+        return self.ARCHIVE_CONTENT_TEMPLATE % timeStamp
+
+    def findFile(self, fileGlobs, fileType=None):
+        """
+        Tries to locate a file with a given list of possible file names under
+        the classes default data paths.
+
+        Uses the newest version of all files found.
+
+        @type fileGlobs: str/list of str
+        @param fileGlobs: possible file names
+        @type fileType: str
+        @param fileType: textual type of file used in error msg
+        @rtype: str
+        @return: path to file of first match in search for existing file
+        @raise IOError: if no file found
+        """
+        import glob
+
+        if type(fileGlobs) != type([]):
+            fileGlobs = [fileGlobs]
+        foundFiles = []
+        for fileGlob in fileGlobs:
+            for path in self.dataPath:
+                globPath = os.path.join(os.path.expanduser(path), fileGlob)
+                for filePath in glob.glob(globPath):
+                    if os.path.exists(filePath):
+                        fileName = os.path.basename(filePath)
+                        foundFiles.append((fileName, filePath))
+
+        if foundFiles:
+            if hasattr(self, 'getPreferredFile'):
+                return self.getPreferredFile([path for _, path in foundFiles])
+            else:
+                _, newestPath = max(foundFiles)
+                return newestPath
+        else:
+            if fileType == None:
+                fileType = "file"
+            raise IOError("No " + fileType + " found for '" + self.PROVIDES \
+                + "' under path(s)'" + "', '".join(self.dataPath) \
+                + "' for file names '" + "', '".join(fileGlobs) + "'")
+
+
+class HanDeDictBuilder(TimestampedCEDICTFormatBuilder):
     """
     Builds the HanDeDict dictionary.
     """
@@ -3225,69 +3293,9 @@ class HanDeDictBuilder(CEDICTFormatBuilder):
     FILE_NAMES = ['handedict-*.zip', 'handedict-*.tar.bz2', 'handedict.u8']
     ENCODING = 'utf-8'
     FILTER = filterSpacing
-
-    def extractTimeStamp(self, filePath):
-        fileName = os.path.basename(filePath)
-        matchObj = re.match(r'handedict-(\d{8})\.', fileName)
-        if matchObj:
-            return matchObj.group(1)
-
-    def getPreferredFile(self, filePaths):
-        timeStamps = []
-        for filePath in filePaths:
-            ts = self.extractTimeStamp(filePath)
-            if ts:
-                timeStamps.append((ts, filePath))
-        if timeStamps:
-            _, filePath = max(timeStamps)
-            return filePath
-        else:
-            filePaths[0]
-
-    def getArchiveContentName(self, filePath):
-        timeStamp = self.extractTimeStamp(filePath)
-        return 'handedict-' + timeStamp + '/handedict.u8'
-
-    def findFile(self, fileGlobs, fileType=None):
-        """
-        Tries to locate a file with a given list of possible file names under
-        the classes default data paths.
-
-        Uses the newest version of all files found.
-
-        @type fileGlobs: str/list of str
-        @param fileGlobs: possible file names
-        @type fileType: str
-        @param fileType: textual type of file used in error msg
-        @rtype: str
-        @return: path to file of first match in search for existing file
-        @raise IOError: if no file found
-        """
-        import glob
-
-        if type(fileGlobs) != type([]):
-            fileGlobs = [fileGlobs]
-        foundFiles = []
-        for fileGlob in fileGlobs:
-            for path in self.dataPath:
-                globPath = os.path.join(os.path.expanduser(path), fileGlob)
-                for filePath in glob.glob(globPath):
-                    if os.path.exists(filePath):
-                        fileName = os.path.basename(filePath)
-                        foundFiles.append((fileName, filePath))
-
-        if foundFiles:
-            if hasattr(self, 'getPreferredFile'):
-                return self.getPreferredFile([path for _, path in foundFiles])
-            else:
-                _, newestPath = max(foundFiles)
-                return newestPath
-        else:
-            if fileType == None:
-                fileType = "file"
-            raise IOError("No " + fileType + " found for '" + self.PROVIDES \
-                + "' under path(s)'" + "', '".join(self.dataPath) \
-                + "' for file names '" + "', '".join(fileGlobs) + "'")
+    
+    EXTRACT_TIMESTAMP = r'handedict-(\d{8})\.'
+    ARCHIVE_CONTENT_TEMPLATE = 'handedict-%s/handedict.u8'
 
 
 class HanDeDictWordIndexBuilder(WordIndexBuilder):
@@ -3298,6 +3306,29 @@ class HanDeDictWordIndexBuilder(WordIndexBuilder):
     DEPENDS = ['HanDeDict']
     TABLE_SOURCE = 'HanDeDict'
     HEADWORD_SOURCE = 'HeadwordTraditional'
+
+
+class CFDICTBuilder(TimestampedCEDICTFormatBuilder):
+    """
+    Builds the CFDICT dictionary.
+    """
+    PROVIDES = 'CFDICT'
+    FILE_NAMES = ['cfdict-*.zip', 'cfdict-*.tar.bz2', 'cfdict.u8']
+    ENCODING = 'utf-8'
+    
+    EXTRACT_TIMESTAMP = r'cfdict-(\d{8})\.'
+    ARCHIVE_CONTENT_TEMPLATE = 'cfdict-%s/cfdict.u8'
+
+
+class CFDICTWordIndexBuilder(WordIndexBuilder):
+    """
+    Builds the word index of the CFDICT dictionary.
+    """
+    PROVIDES = 'CFDICT_Words'
+    DEPENDS = ['CFDICT']
+    TABLE_SOURCE = 'CFDICT'
+    HEADWORD_SOURCE = 'HeadwordTraditional'
+
 
 #}
 #{ DatabaseBuilder
