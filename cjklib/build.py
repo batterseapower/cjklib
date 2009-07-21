@@ -3389,7 +3389,7 @@ class DatabaseBuilder:
             self.db = dbConnectInst
         else:
             self.db = dbconnector.DatabaseConnector.getDBConnector(
-                databaseSettings)
+                databaseSettings.get('databaseUrl'))
 
         # get TableBuilder classes
         tableBuilderClasses = DatabaseBuilder.getTableBuilderClasses(
