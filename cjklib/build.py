@@ -100,7 +100,7 @@ class TableBuilder(object):
     DEPENDS = []
     """Contains the names of the tables needed for the build process."""
 
-    def __init__(self, dataPath=None, dbConnectInst=None, quiet=False):
+    def __init__(self, dataPath=None, dbConnectInst=None, quiet=False, disableFTS3=False):
         """
         Constructs the TableBuilder.
 
@@ -114,6 +114,7 @@ class TableBuilder(object):
         """
         self.dataPath = dataPath
         self.quiet = quiet
+        self.disableFTS3 = disableFTS3
         self.db = dbConnectInst
 
     def build(self):
@@ -471,8 +472,8 @@ class UnihanBuilder(EntryGeneratorBuilder):
         'kXHC1983': Text()}
     unihanGenerator = None
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(UnihanBuilder, self).__init__(dataPath, dbConnectInst, quiet)
+    def __init__(self, *args, **kwargs):
+        super(UnihanBuilder, self).__init__(*args, **kwargs)
         self.PRIMARY_KEYS = [self.CHARACTER_COLUMN]
 
     def getUnihanGenerator(self):
@@ -532,8 +533,8 @@ class UnihanBMPBuilder(UnihanBuilder):
                 if ord(char) < int('20000', 16):
                     yield entryDict
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(UnihanBMPBuilder, self).__init__(dataPath, dbConnectInst, quiet)
+    def __init__(self, *args, **kwargs):
+        super(UnihanBMPBuilder, self).__init__(*args, **kwargs)
         self.PRIMARY_KEYS = [self.CHARACTER_COLUMN]
 
     def getGenerator(self):
@@ -721,8 +722,8 @@ class Kanjidic2Builder(EntryGeneratorBuilder):
     'character' element and a set of attribute value pairs.
     """
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(Kanjidic2Builder, self).__init__(dataPath, dbConnectInst, quiet)
+    def __init__(self, *args, **kwargs):
+        super(Kanjidic2Builder, self).__init__(*args, **kwargs)
         tags = [tag for tag, _ in self.KANJIDIC_TAG_MAPPING.values()]
         self.COLUMNS = tags
         self.PRIMARY_KEYS = [self.CHARACTER_COLUMN]
@@ -769,9 +770,8 @@ class UnihanDerivedBuilder(EntryGeneratorBuilder):
     database and the 'quiet' flag. Needs to be overwritten in subclass.
     """
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(UnihanDerivedBuilder, self).__init__(dataPath, dbConnectInst,
-            quiet)
+    def __init__(self, *args, **kwargs):
+        super(UnihanDerivedBuilder, self).__init__(*args, **kwargs)
         # create name mappings
         self.COLUMNS = ['ChineseCharacter', self.COLUMN_TARGET]
         self.PRIMARY_KEYS = self.COLUMNS
@@ -978,9 +978,8 @@ class CharacterVariantBuilder(EntryGeneratorBuilder):
     COLUMN_TYPES = {'ChineseCharacter': String(1), 'Variant': String(1),
         'Type': String(1)}
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(CharacterVariantBuilder, self).__init__(dataPath, dbConnectInst,
-            quiet)
+    def __init__(self, *args, **kwargs):
+        super(CharacterVariantBuilder, self).__init__(*args, **kwargs)
         # create name mappings
         self.COLUMNS = ['ChineseCharacter', 'Variant', 'Type']
         self.PRIMARY_KEYS = self.COLUMNS
@@ -1038,10 +1037,6 @@ class CharacterVariantBMPBuilder(CharacterVariantBuilder):
                 if ord(variant) < int('20000', 16):
                     yield(character, variant, variantType)
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(CharacterVariantBMPBuilder, self).__init__(dataPath,
-            dbConnectInst, quiet)
-
     def getGenerator(self):
         # create generator
         keys = self.COLUMN_SOURCE_ABBREV.keys()
@@ -1063,9 +1058,8 @@ class UnihanCharacterSetBuilder(EntryGeneratorBuilder):
     """
     DEPENDS=['Unihan']
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(UnihanCharacterSetBuilder, self).__init__(dataPath, dbConnectInst,
-            quiet)
+    def __init__(self, *args, **kwargs):
+        super(UnihanCharacterSetBuilder, self).__init__(*args, **kwargs)
         # create name mappings
         self.COLUMNS = ['ChineseCharacter']
         self.PRIMARY_KEYS = self.COLUMNS
@@ -1296,9 +1290,8 @@ class CharacterPinyinBuilder(EntryGeneratorBuilder):
     DEPENDS=['CharacterUnihanPinyin', 'CharacterXHPCPinyin',
         'CharacterXHCPinyin']
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(CharacterPinyinBuilder, self).__init__(dataPath, dbConnectInst,
-            quiet)
+    def __init__(self, *args, **kwargs):
+        super(CharacterPinyinBuilder, self).__init__(*args, **kwargs)
         # create name mappings
         self.COLUMNS = ['ChineseCharacter', 'Reading']
         self.PRIMARY_KEYS = self.COLUMNS
@@ -1338,9 +1331,6 @@ class CSVFileLoader(TableBuilder):
         delimiter = ','
         lineterminator = '\n'
         quotechar = "'"
-
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(CSVFileLoader, self).__init__(dataPath, dbConnectInst, quiet)
 
     # TODO unicode_csv_reader(), utf_8_encoder(), byte_string_dialect() used
     #  to work around missing Unicode support in csv module
@@ -1744,9 +1734,6 @@ class ZVariantBuilder(EntryGeneratorBuilder):
     INDEX_KEYS = [['ChineseCharacter']]
     COLUMN_TYPES = {'ChineseCharacter': String(1), 'ZVariant': Integer()}
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(ZVariantBuilder, self).__init__(dataPath, dbConnectInst, quiet)
-
     def getGenerator(self):
         decompositionTable = self.db.tables['CharacterDecomposition']
         strokeOrderTable = self.db.tables['StrokeOrder']
@@ -1821,9 +1808,6 @@ class StrokeCountBuilder(EntryGeneratorBuilder):
     PRIMARY_KEYS = ['ChineseCharacter', 'ZVariant']
     COLUMN_TYPES = {'ChineseCharacter': String(1), 'StrokeCount': Integer(),
         'ZVariant': Integer()}
-
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(StrokeCountBuilder, self).__init__(dataPath, dbConnectInst, quiet)
 
     def getGenerator(self):
         decompositionTable = self.db.tables['CharacterDecomposition']
@@ -2115,10 +2099,6 @@ class CharacterComponentLookupBuilder(EntryGeneratorBuilder):
     INDEX_KEYS = [['Component']]
     COLUMN_TYPES = {'ChineseCharacter': String(1), 'ZVariant': Integer(),
         'Component': String(1), 'ComponentZVariant': Integer()}
-
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(CharacterComponentLookupBuilder, self).__init__(dataPath,
-            dbConnectInst, quiet)
 
     def getGenerator(self):
         decompositionTable = self.db.tables['CharacterDecomposition']
@@ -2436,10 +2416,6 @@ class CharacterRadicalStrokeCountBuilder(EntryGeneratorBuilder):
         'RadicalZVariant': Integer(), 'MainCharacterLayout': String(1),
         'RadicalRelativePosition': Integer(), 'ResidualStrokeCount': Integer()}
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(CharacterRadicalStrokeCountBuilder, self).__init__(dataPath,
-            dbConnectInst, quiet)
-
     def getGenerator(self):
         # get all characters we have component information for
         decompositionTable = self.db.tables['CharacterDecomposition']
@@ -2542,10 +2518,6 @@ class CharacterResidualStrokeCountBuilder(EntryGeneratorBuilder):
     INDEX_KEYS = [['RadicalIndex']]
     COLUMN_TYPES = {'ChineseCharacter': String(1), 'RadicalIndex': Integer(),
         'ZVariant': Integer(), 'ResidualStrokeCount': Integer()}
-
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(CharacterResidualStrokeCountBuilder, self).__init__(dataPath,
-            dbConnectInst, quiet)
 
     def getGenerator(self):
         residualSCTable = self.db.tables['CharacterRadicalResidualStrokeCount']
@@ -2722,9 +2694,6 @@ class EDICTFormatBuilder(EntryGeneratorBuilder):
     """Number of starting lines to ignore."""
     FILTER = None
     """Filter to apply to the read entry before writing to table."""
-
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(EDICTFormatBuilder, self).__init__(dataPath, dbConnectInst, quiet)
 
     def getGenerator(self):
         # get file handle
@@ -2912,6 +2881,12 @@ class EDICTFormatBuilder(EntryGeneratorBuilder):
         @rtype: bool
         @return: C{True} if the FTS3 extension exists, C{False} otherwise.
         """
+        
+        # FTS queries are 4 times slower than non-FTS ones in my testing (SQLite 3.4.0 on OS X)
+        # This gives the user a chance to disable the use of FTS altogether.
+        if self.disableFTS3:
+            return False
+        
         # Until #3436 is fixed (http://www.sqlite.org/cvstrac/tktview?tn=3436,5)
         #   do it the bad way
         try:
@@ -3061,9 +3036,6 @@ class WordIndexBuilder(EntryGeneratorBuilder):
     HEADWORD_SOURCE = 'Headword'
     """Source of headword"""
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
-        super(WordIndexBuilder, self).__init__(dataPath, dbConnectInst, quiet)
-
     def getGenerator(self):
         table = self.db.tables[self.TABLE_SOURCE]
         entries = self.db.selectRows(
@@ -3107,11 +3079,10 @@ class CEDICTFormatBuilder(EDICTFormatBuilder):
         'HeadwordSimplified': String(255), 'Reading': String(255),
         'Translation': Text()}
 
-    def __init__(self, dataPath, dbConnectInst, quiet=False):
+    def __init__(self, *args, **kwargs):
         self.ENTRY_REGEX = \
             re.compile(r'\s*(\S+)(?:\s+(\S+))?\s*\[([^\]]*)\]\s*(/.*/)\s*$')
-        super(CEDICTFormatBuilder, self).__init__(dataPath, dbConnectInst,
-            quiet)
+        super(CEDICTFormatBuilder, self).__init__(*args, **kwargs)
 
 
 class CEDICTBuilder(CEDICTFormatBuilder):
@@ -3347,7 +3318,7 @@ class DatabaseBuilder:
     build requests.
     """
     def __init__(self, databaseUrl=None, dbConnectInst=None, dataPath=[],
-        quiet=False, rebuildDepending=True, rebuildExisting=True, noFail=False,
+        quiet=False, disableFTS3=False, rebuildDepending=True, rebuildExisting=True, noFail=False,
         prefer=[], additionalBuilders=[]):
         """
         Constructs the DatabaseBuilder.
@@ -3361,6 +3332,9 @@ class DatabaseBuilder:
         @param dataPath: optional list of paths to the data file(s)
         @type quiet: bool
         @param quiet: if true no status information will be printed to stderr
+        @type disableFTS3: bool
+        @param disableFTS3: if true the SQLite FTS3 extension will not be
+            used if present. Faster but less accurate queries.
         @type rebuildDepending: bool
         @param rebuildDepending: if true existing tables that depend on updated
             tables will be dropped and built from scratch
@@ -3387,6 +3361,7 @@ class DatabaseBuilder:
                 # wrap as list
                 self.dataPath = [dataPath]
         self.quiet = quiet
+        self.disableFTS3 = disableFTS3
         self.rebuildDepending = rebuildDepending
         self.rebuildExisting = rebuildExisting
         self.noFail = noFail
@@ -3477,7 +3452,7 @@ class DatabaseBuilder:
             # dependencies and note it down for deletion
             transaction = self.db.connection.begin()
             try:
-                instance = builder(self.dataPath, self.db, self.quiet)
+                instance = builder(dataPath=self.dataPath, dbConnectInst=self.db, quiet=self.quiet, disableFTS3=self.disableFTS3)
                 # mark tables as deletable if its only provided because of
                 #   dependencies and the table doesn't exists yet
                 if builder.PROVIDES in buildDependentTables \
