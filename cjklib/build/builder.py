@@ -584,7 +584,7 @@ class UnihanBuilder(EntryGeneratorBuilder):
 
             # check for multiple file names (Unicode >= 5.2)
             pathList = []
-            if path.endswith('Unihan.zip') or path.endswith('Unihan.txt')
+            if path.endswith('Unihan.zip') or path.endswith('Unihan.txt'):
                 pathList = [path]
             else:
                 dirname = os.path.dirname(path)
