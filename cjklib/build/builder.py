@@ -584,7 +584,7 @@ class UnihanBuilder(EntryGeneratorBuilder):
 
             # check for multiple file names (Unicode >= 5.2)
             pathList = []
-            if path.endswith(('Unihan.zip', 'Unihan.txt')):
+            if path.endswith('Unihan.zip') or path.endswith('Unihan.txt')
                 pathList = [path]
             else:
                 dirname = os.path.dirname(path)
@@ -1288,7 +1288,7 @@ class CharacterXHPCReadingBuilder(UnihanDerivedBuilder):
     Builds the Xiandai Hanyu Pinlu Cidian Pinyin mapping table using the Unihan
     database.
     """
-    class XHPCReadingSplitter():
+    class XHPCReadingSplitter:
         """
         Generates the Xiandai Hanyu Pinlu Cidian Pinyin syllables from the
         Unihan table.
